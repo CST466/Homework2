@@ -18,7 +18,11 @@ int main()
 {
 	char cypher_text;
 	SDES_KEYS keys = {0x25,0xC2};
-	cypher_text = SDES_Encrypt(0xB6,keys);
+	keys = CreateKeys(0x105);
+	cypher_text = SDES_Encrypt(0x89,keys);
+	keys.key_1 = 0xC2;
+	keys.key_2 = 0x25;
+	char undecrypted = SDES_Encrypt(cypher_text,keys);
 }
 
 SDES_KEYS CreateKeys(int key_in)
@@ -62,14 +66,14 @@ int SDES_KEY_P10(int key_in)
 
 char SDES_LS1(char data)
 {
-	char out = (data << 1) | ((data & 0x10) >> 4);
+	char out = (data >> 1) | ((data & 0x01) << 4);
 	out = out & 0x1F;
 	return out;
 }
 
 char SDES_LS2(char data)
 {
-	char out = (data << 2) | ((data & 0x10) >> 3) | ((data & 0x08) >> 3);
+	char out = (data >> 2) | ((data & 0x01) << 3) | ((data & 0x02) << 3);
 	out = out & 0x1F;
 	return out;
 }
@@ -77,14 +81,14 @@ char SDES_LS2(char data)
 int SDES_KEY_P8(int key_in)
 {
 	int ret = 0;
-	ret = ((key_in & 0x1) << 2) |
-		  ((key_in & 0x2) >> 1) |
-		  ((key_in & 0x4) << 1) |
-		  ((key_in & 0x8) << 2) |
-		  ((key_in & 0x10) << 3) |
-		  ((key_in & 0x20) >> 3) |
-		  ((key_in & 0x40) >> 2) |
-		  ((key_in & 0x80) >> 1);
+	ret = ((key_in & 0x04) >> 1) |
+		  ((key_in & 0x08)) |
+		  ((key_in & 0x10) << 1) |
+		  ((key_in & 0x20) >> 5) |
+		  ((key_in & 0x40) >> 4) |
+		  ((key_in & 0x80) >> 3) |
+		  ((key_in & 0x100) >> 1) |
+		  ((key_in & 0x200) >> 3);
 		  return ret;
 }
 
@@ -159,15 +163,24 @@ char SDES_SBOXES(char in)
 	
 	char out;
 	char left_nibble_start = in & 0x0F;
-	char left_nibble_row = (left_nibble_start & 0x01) | ((left_nibble_start & 0x8) << 2);
-	char left_nibble_col = ((left_nibble_start & 0x02) >> 1) | ((left_nibble_start & 0x04) >> 1);
+	//char left_nibble_row = (left_nibble_start & 0x01) | ((left_nibble_start & 0x8) << 2);
+	char left_nibble_row = ((left_nibble_start & 0x01) << 1) | ((left_nibble_start & 0x8) >> 3);
+	char left_nibble_col = ((left_nibble_start & 0x02) | ((left_nibble_start & 0x04) >> 2));
+	//char left_nibble_col = ((left_nibble_start & 0x02) >> 1) | ((left_nibble_start & 0x04) >> 1);
 	
 	char right_nibble_start = in >> 4;
-	char right_nibble_row = (in & 0x01) | ((in & 0x8) << 2);
-	char right_nibble_col = ((in & 0x02) >> 1) | ((in & 0x04) >> 1);
+	//char right_nibble_row = (in & 0x01) | ((in & 0x8) << 2);
+	//char right_nibble_col = ((in & 0x02) >> 1) | ((in & 0x04) >> 1);
+	char right_nibble_row = ((right_nibble_start & 0x01) << 1) | ((right_nibble_start & 0x8) >> 3);
+	char right_nibble_col = ((right_nibble_start & 0x02)) | ((right_nibble_start & 0x04) >> 2);
+	char out_lower = (s0[left_nibble_row][left_nibble_col] & 0x3);
+	out_lower = ((out_lower & 0x01) << 1) | ((out_lower & 0x02) >> 1);
 	
+	char out_higher = ((s1[right_nibble_row][right_nibble_col] & 0x3));
+	out_higher = ((((out_higher & 0x01) << 1) | ((out_higher & 0x02) >> 1)) << 2);
 	
-	out = (s0[left_nibble_row][left_nibble_col] & 0x3) | ((s1[right_nibble_row][right_nibble_col] & 0x3) << 2);
+	//out = (s0[left_nibble_row][left_nibble_col] & 0x3) | ((s1[right_nibble_row][right_nibble_col] & 0x3) << 2);
+	out = out_lower | out_higher;
 	
 	return out;
 }
@@ -182,11 +195,11 @@ char SDES_Encrypt(char plain_text, SDES_KEYS keys)
 	
 	char k1_ep_xor_out = keys.key_1 ^ ep_out;
 	char sbox_out = SDES_SBOXES(k1_ep_xor_out);
-	char sdes_p4_out = SDES_P4(sbox_out);
+	char sdes_p4_out = SDES_P4(sbox_out); //???? does this work?
 	char xor_ip_left_nibble_with_p4 = sdes_p4_out ^ (initial_permuation_out & 0x0F);
-	char combine_ip_right_nibble_with_above = ((initial_permuation_out & 0xF0) >> 4) | (xor_ip_left_nibble_with_p4 << 4);
+	char combine_ip_right_nibble_with_above = ((initial_permuation_out & 0xF0)) | ((xor_ip_left_nibble_with_p4));
 	char swap_two_halves = ((combine_ip_right_nibble_with_above & 0xF0) >> 4) | ((combine_ip_right_nibble_with_above & 0x0F) << 4);
-	char ep_of_right_nibble_swap = SDES_EP((swap_two_halves & 0xF0) >> 4);
+	char ep_of_right_nibble_swap = SDES_EP((swap_two_halves & 0xF0));
 	char xor_with_key2 = ep_of_right_nibble_swap ^ keys.key_2;
 	char sbox2_out = SDES_SBOXES(xor_with_key2);
 	char p4_on_sbox2_out = SDES_P4(sbox2_out);
