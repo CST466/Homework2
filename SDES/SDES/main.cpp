@@ -1,3 +1,4 @@
+//http://buzzard.ups.edu/sdes/sdes.html
 typedef struct{
 	char key_1;
 	char key_2;
