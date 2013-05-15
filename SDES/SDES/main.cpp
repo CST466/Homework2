@@ -1,7 +1,11 @@
+<<<<<<< HEAD
 #include <stdio.h>
 #include <iostream>
 using std::cout;
 using std::cin;
+=======
+//http://buzzard.ups.edu/sdes/sdes.html
+>>>>>>> 57e23a3d9d8fcc187bc2a7f1c8e9bcd3da779454
 typedef struct{
 	char key_1;
 	char key_2;
