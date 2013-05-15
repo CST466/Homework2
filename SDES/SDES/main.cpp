@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <iostream>
+using std::cout;
+using std::cin;
 typedef struct{
 	char key_1;
 	char key_2;
@@ -10,19 +14,28 @@ int SDES_KEY_P8(int key_in);
 char SDES_EP(char char_in);
 char SDES_P4(char char_in);
 char SDES_SBOXES(char in);
+char SDES_Decrypt(char plain_text, SDES_KEYS keys);
 char SDES_Encrypt(char plain_text, SDES_KEYS keys);
 char SDES_IP(char data_in);
 char SDES_IP_inverse(char data_in);
 
 int main()
 {
+	//Enter key generating character
+	cout << "\nEnter charactor used to generate the key: ";
+	char keygen;
+	cin >> keygen;
+	SDES_KEYS keys = CreateKeys(keygen);
+	cout << "Enter charactor to be encrypted: ";
+	char plain_text;
+	cin >> plain_text;
+	cout << "Encrypted data: ";
 	char cypher_text;
-	SDES_KEYS keys = {0x25,0xC2};
-	keys = CreateKeys(0x105);
-	cypher_text = SDES_Encrypt(0x89,keys);
-	keys.key_1 = 0xC2;
-	keys.key_2 = 0x25;
-	char undecrypted = SDES_Encrypt(cypher_text,keys);
+	cypher_text = SDES_Encrypt(plain_text,keys);
+	cout << cypher_text;
+	cout << "\nDecrypted data: ";
+	char decrypted_text = SDES_Decrypt(cypher_text,keys);
+	cout << decrypted_text;
 }
 
 SDES_KEYS CreateKeys(int key_in)
@@ -185,7 +198,13 @@ char SDES_SBOXES(char in)
 	return out;
 }
 
-
+char SDES_Decrypt(char plain_text, SDES_KEYS keys)
+{
+	SDES_KEYS decrypt_key;
+	decrypt_key.key_1 = keys.key_2;
+	decrypt_key.key_2 = keys.key_1;
+	return SDES_Encrypt(plain_text,decrypt_key);
+}
 char SDES_Encrypt(char plain_text, SDES_KEYS keys)
 {
 
@@ -207,9 +226,6 @@ char SDES_Encrypt(char plain_text, SDES_KEYS keys)
 	char replace_left_nibble_of_first_swap = (swap_two_halves & 0xF0) | (xor_p4_on_sbox2_out_with_earlier_swap_left_nibble & 0x0F);
 	char apply_inverse_ip = SDES_IP_inverse(replace_left_nibble_of_first_swap);
 	return apply_inverse_ip;
-	
-	
-
 }
 
 
