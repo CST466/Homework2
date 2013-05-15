@@ -21,21 +21,54 @@ char SDES_IP_inverse(char data_in);
 
 int main()
 {
+	char selection;
 	//Enter key generating character
-	cout << "\nEnter charactor used to generate the key: ";
-	char keygen;
-	cin >> keygen;
-	SDES_KEYS keys = CreateKeys(keygen);
-	cout << "Enter charactor to be encrypted: ";
-	char plain_text;
-	cin >> plain_text;
-	cout << "Encrypted data: ";
-	char cypher_text;
-	cypher_text = SDES_Encrypt(plain_text,keys);
-	cout << cypher_text;
-	cout << "\nDecrypted data: ";
-	char decrypted_text = SDES_Decrypt(cypher_text,keys);
-	cout << decrypted_text;
+	bool done = false;
+	while (!done)
+	{
+		done = false;
+		while (!done)
+		{
+		cout << "Encrypt (e) or Decrypt(d): ";
+		cin >> selection;
+		if( toupper(selection) == 'E' || toupper(selection) == 'D')
+		{
+			done = true;
+		}
+		}
+		cout << "\nEnter charactor used to generate the key: ";
+		char keygen;
+		cin >> keygen;
+		SDES_KEYS keys = CreateKeys(keygen);
+		char plain_text;
+		char cypher_text;
+		if(toupper(selection) == 'E')
+		{
+			cout << "Enter charactor to be encrypted: ";
+			cin >> plain_text;
+			cout << "Encrypted data: ";
+			cypher_text = SDES_Encrypt(plain_text,keys);
+			cout << cypher_text;
+		}
+		else
+		{
+			cout << "Enter charactor to be decrypted: ";
+			cin >> cypher_text;
+			cout << "\nDecrypted data: ";
+			plain_text = SDES_Decrypt(cypher_text,keys);
+			cout << plain_text;
+		}
+		cout << "\nQuit(Q) or Continue(C): ";
+		cin >> selection;
+		if(toupper(selection) == 'Q')
+		{
+			done = true;
+		}
+		else
+		{
+			done = false;
+		}
+	}
 }
 
 SDES_KEYS CreateKeys(int key_in)
